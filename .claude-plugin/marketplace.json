@@ -1,0 +1,14 @@
+{
+  "name": "superfreelas",
+  "owner": {
+    "name": "Juliano Scapin",
+    "email": "freelasuper@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "superfreelas",
+      "source": "./plugin",
+      "description": "Commands e skills pra rodar growth operations com o Growth Brain MCP. Metodologia fica no server; plugin é só UX."
+    }
+  ]
+}
