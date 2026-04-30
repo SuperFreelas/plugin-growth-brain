@@ -35,3 +35,23 @@ else
   # Fallback: export direto (funciona se Claude propaga o env do hook)
   export GROWTH_BRAIN_TOKEN="$TOKEN"
 fi
+
+# Guardrail: se setup.md não existe em _initiatives/<cliente>/, avisa o Claude
+# pra rodar /setup primeiro. Defesa em profundidade — também tem check duro
+# nos commands de análise (skill before-analysis).
+SETUP_MARKER=""
+if [ -d "_initiatives" ]; then
+  # Pega o primeiro subdir de _initiatives — convencionalmente é o cliente
+  CLIENT_DIR=$(find _initiatives -mindepth 1 -maxdepth 1 -type d | head -n1)
+  if [ -n "$CLIENT_DIR" ] && [ ! -f "$CLIENT_DIR/setup.md" ]; then
+    SETUP_MARKER="ATENÇÃO: este projeto ainda não foi configurado. Rode /setup antes de qualquer comando de análise."
+  fi
+fi
+
+# additionalContext do SessionStart hook é injetado no contexto da sessão.
+# Formato: stdout do hook vai pro contexto se Claude Code suportar
+# (depende da versão; em versões antigas pode só logar). Funciona como
+# defesa em profundidade — não substitui o check explícito no /setup.
+if [ -n "$SETUP_MARKER" ]; then
+  echo "$SETUP_MARKER"
+fi
