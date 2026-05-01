@@ -2,6 +2,22 @@ Setup adaptativo do projeto — rodar UMA ÚNICA VEZ, antes de qualquer comando 
 
 Identifique o `<cliente deste projeto>` lendo `_initiatives/<id>/` (apenas 1 subpasta existe).
 
+## Boas-vindas (sempre antes de qualquer fase)
+
+Chame `get_quota_status()` no MCP. Mostre ao cliente:
+
+- Se `tier == "trial"`:
+  > Você está no **trial — 14 dias e 30 análises**. Vamos configurar o projeto agora
+  > (esta etapa não conta como análise) e depois você roda os commands.
+  > Status atual: {used}/30 análises usadas.
+
+- Se `tier == "business"`:
+  > Você está no plano **Business — análises ilimitadas**.
+  > Vamos configurar o projeto.
+
+`/setup` em si não conta como análise (não invoca `before-analysis`). É só
+informativo.
+
 ## Verificação inicial
 
 Se `_initiatives/<cliente>/setup.md` já existe:
