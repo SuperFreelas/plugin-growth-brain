@@ -25,17 +25,21 @@ Se `_initiatives/<cliente>/setup.md` já existe:
 - Avise: "Setup já foi feito em [data]. Pra refazer, use `/setup --rerun` (faz backup antes)."
 - **Não execute as fases.** Pare aqui.
 
-## Fase 0 — Onboarding (6 perguntas obrigatórias)
+## Fase 0 — Onboarding (6 perguntas obrigatórias + adaptativas condicionais)
 
 **Objetivo:** capturar modelo de negócio do cliente pra gerar dataSpec.md adaptado.
 
 1. Chame a tool MCP `get_onboarding_skeleton()`. Retorna `{version, questions[]}`.
-2. Para cada pergunta no array `questions`, faça **uma pergunta de cada vez** ao usuário:
-   - `single_choice`: liste opções numeradas, peça pra escolher 1.
-   - `multi_choice`: liste opções numeradas, peça pra escolher 1+ (separar por vírgula).
-   - `free_text`: peça texto livre. Se for `id=margin` e usuário disser "não sei" / "não tenho ideia" / similar, registre como `"TBD"` (sem pedir de novo).
-   - `composite`: itere as `sub` perguntas, uma de cada vez.
-3. Acumule respostas num dict `answers` com as chaves correspondentes aos `id` das perguntas.
+2. Para cada pergunta no array `questions`, faça **uma pergunta de cada vez** ao usuário — **mas antes, avalie `triggered_by` se a pergunta tiver esse campo:**
+   - Se `triggered_by` está ausente → pergunta obrigatória, sempre faça.
+   - Se `triggered_by` está presente (ex: `"paid in acquisition_channels"`) → avalie a expressão contra `answers` já coletadas. Se falsa → **pule a pergunta inteira (incluindo subs)**. Se verdadeira → faça normalmente.
+   - Sintaxe atual: `"<value> in <answer_key>"` significa "o valor está na resposta da chave (que é multi_choice)". Ex: `"paid in acquisition_channels"` → True se `"paid"` ∈ `answers["acquisition_channels"]`.
+   - Tipos de pergunta:
+     - `single_choice`: liste opções numeradas, peça pra escolher 1.
+     - `multi_choice`: liste opções numeradas, peça pra escolher 1+ (separar por vírgula).
+     - `free_text`: peça texto livre. Se for `id=margin` e usuário disser "não sei" / "não tenho ideia" / similar, registre como `"TBD"` (sem pedir de novo).
+     - `composite`: itere as `sub` perguntas, uma de cada vez.
+3. Acumule respostas num dict `answers` com as chaves correspondentes aos `id` das perguntas. Perguntas puladas (triggered_by falso) ficam fora do dict ou com valor `null`.
 4. Quando `category == "outro"` (P1), faça **até 4 perguntas extras** adaptativas pra entender o modelo (ex: "É marketplace? B2B project-based? Ads platform?"). Anexe respostas em `answers["extras"]` (lista). Limite duro de 4 — depois prossiga.
 5. Escreva `_initiatives/<cliente>/businessProfile.md` com YAML frontmatter:
    ```yaml
