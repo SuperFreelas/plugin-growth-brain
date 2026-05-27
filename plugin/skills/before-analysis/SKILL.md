@@ -112,3 +112,54 @@ Nunca use snapshot isolado. Sempre:
 Depois dos 4 passos acima, execute a skill/command específica
 (`/cohortAnalysis`, `/growthEquation`, `/retentionDrilldown`, `/hypotheses`,
 etc.). Os resultados vão sair muito melhor calibrados.
+
+A forma de executar esses passos — checklist e paralelismo — está na seção 6.
+
+## 6. Orquestração visível (checklist + paralelismo)
+
+*(Esta seção detalha como executar o passo 5 — não é um sexto pré-requisito do protocolo.)*
+
+Ao executar a análise específica (passo 5), **antes de rodar os passos do
+template**, materialize-os como **checklist TodoWrite** e siga as regras de
+paralelismo. Isso vale para qualquer command de análise.
+
+### 6.1 Checklist
+
+- Crie uma lista TodoWrite com **um todo por passo procedural do template**.
+  - Se o template tem seção `# Passos` (ex: `retentionDrilldown`,
+    `acquisitionDrilldown`), use os passos numerados dela.
+  - Se não tem (templates de report como `reportAcquisition`, `reportAffiliates`,
+    que só têm `# Output`), derive um todo por **seção do Output** a produzir.
+- Marque cada todo `in_progress` ao começar e `completed` **só depois que ele
+  produziu o artefato** (a query foi executada e o resultado analisado — zero
+  linhas é um resultado válido; a validação MECE passou; a seção do output ficou
+  escrita). Não marque `completed` antecipadamente.
+- Os passos 0-5 deste protocolo pré-análise **não entram** no checklist — rodam
+  nos bastidores. O checklist é só dos passos da análise em si.
+
+### 6.2 Paralelismo (quando o passo tem a tag `[paralelizável: …]`)
+
+Alguns templates anotam um passo com `[paralelizável: …]`. Só nesses passos:
+
+1. **Pré-requisito sequencial:** só dispare o paralelismo **depois** que todos
+   os passos anteriores do checklist estiverem `completed`. Subagent nunca roda
+   sobre insumo parcial (ex: a segmentação do `retentionDrilldown` exige buckets
+   MECE + taxas de transição + tendência já computados).
+2. **Unidade = valor de uma dimensão única:** escolha **uma** dimensão de corte
+   (a mais relevante ao diagnóstico) e despache **um subagent por valor** dela —
+   ex: dimensão `signup_source` → um subagent para `organic`, um para `paid`, um
+   para `referral`. Nunca faça produto cartesiano de múltiplas dimensões.
+3. **Teto:** no máximo 3-4 subagents por análise. Se a dimensão tem mais valores,
+   pegue os mais relevantes (ex: top por volume) e trate o resto agregado.
+4. **Contexto do subagent:** passe ao subagent os **learnings relevantes à fatia
+   dele** (não só o recorte de dado). Se um aprendizado documentado afeta aquela
+   dimensão, ele entra no briefing.
+5. **Subagents não chamam MCP.** O caminho de dados é 100% local
+   (`_resources/scripts/pull_data.py`). Subagents só rodam query local sobre a
+   fatia e devolvem o resultado. As tools `record_command_run`, `get_principles`,
+   `get_skill_template` e `get_quota_status` rodam **uma única vez no agente principal** — nunca nos subagents (senão a
+   quota conta a análise N vezes).
+6. **Agregação no principal:** o agente principal junta os resultados das fatias,
+   só então marca o passo `completed` e segue.
+
+Passos sem a tag `[paralelizável]` rodam **sequenciais**, como sempre.
